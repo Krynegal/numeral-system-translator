@@ -1,13 +1,7 @@
 package models
 
 type Request struct {
-	Value string `json:"value"`
-	Base  int    `json:"base"`
-}
-
-func NewRequest(value string, base int) *Request {
-	return &Request{
-		Value: value,
-		Base:  base,
-	}
+	Number *string `json:"number"`
+	Base   *int    `json:"base"`
+	ToBase *int    `json:"to_base"`
 }

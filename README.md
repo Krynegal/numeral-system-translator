@@ -10,11 +10,9 @@ This API just translate one integer number from one numeral system to another
 
 ```json
 {
-    "number": {
-        "value":"35",
-        "base":10
-    },
-    "toBase":3
+    "number": "35", 
+    "base": 10,
+    "to_base": 3
 }
 ```
 

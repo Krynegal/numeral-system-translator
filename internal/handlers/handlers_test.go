@@ -3,276 +3,140 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"github.com/Krynegal/numeral-system-translator.git/internal/models"
-	"io/ioutil"
+	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func testRequest(t *testing.T, method, path string, body []byte) (*http.Response, models.Response) {
-	ts := httptest.NewServer(NewHandler().Router)
-	defer ts.Close()
-	req, err := http.NewRequest(method, ts.URL+path, bytes.NewBuffer(body))
-	require.NoError(t, err)
+func TestTranslateHandler(t *testing.T) {
+	t.Run("ok", func(t *testing.T) {
+		converter := &ConverterMock{
+			ConvertFunc: func(num string, base int, toBase int) (string, error) {
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
+				return "", nil
+			},
+		}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	require.NoError(t, err)
-	defer resp.Body.Close()
+		r := NewRouter(converter)
+		r.POST("/translate", TranslateHandler(converter))
 
-	var response models.Response
-	err = json.Unmarshal(respBody, &response)
-	require.NoError(t, err)
-	return resp, response
-}
+		number := new(string)
+		*number = "A"
+		base := new(int)
+		*base = 16
+		toBase := new(int)
+		*toBase = 10
 
-func TestHandlerAdd(t *testing.T) {
-	tests := []struct {
-		name     string
-		success  bool
-		operand1 string
-		operand2 string
-		wantRes  string
-	}{
-		{
-			name:     "test #1",
-			success:  true,
-			operand1: "5",
-			operand2: "7",
-			wantRes:  "12",
-		},
-		{
-			name:     "test #2",
-			success:  true,
-			operand1: "-5",
-			operand2: "7",
-			wantRes:  "2",
-		},
-		{
-			name:     "test #3",
-			success:  false,
-			operand1: "-2",
-			operand2: "",
-			wantRes:  "",
-		},
-		{
-			name:     "test #4",
-			success:  true,
-			operand1: "-0",
-			operand2: "3",
-			wantRes:  "3",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			//reqBody := `{"":"", "":""}`
-			reqBody := smpl_calc_api.Data{
-				Operand1: smpl_calc_api.Operand{
-					Value: tt.operand1,
-					Base:  10,
+		company := models.Request{
+			Number: number,
+			Base:   base,
+			ToBase: toBase,
+		}
+
+		jsonValue, _ := json.Marshal(company)
+		req, _ := http.NewRequest("POST", "/translate", bytes.NewBuffer(jsonValue))
+
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("error", func(t *testing.T) {
+		t.Run("converter", func(t *testing.T) {
+			converter := &ConverterMock{
+				ConvertFunc: func(num string, base int, toBase int) (string, error) {
+
+					return "", errors.New("error")
 				},
-				Operand2: smpl_calc_api.Operand{
-					Value: tt.operand2,
-					Base:  10,
-				},
-				ToBase: 10,
 			}
-			r, _ := json.Marshal(reqBody)
-			resp, body := testRequest(t, http.MethodPost, "/api/add", r)
-			defer resp.Body.Close()
 
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, tt.success, body.Success)
-			assert.Equal(t, tt.wantRes, body.Result)
-		})
-	}
-}
+			r := NewRouter(converter)
+			r.POST("/translate", TranslateHandler(converter))
 
-func TestHandlerSub(t *testing.T) {
-	tests := []struct {
-		name     string
-		success  bool
-		operand1 string
-		operand2 string
-		wantRes  string
-	}{
-		{
-			name:     "test #1",
-			success:  true,
-			operand1: "-11",
-			operand2: "33",
-			wantRes:  "-44",
-		},
-		{
-			name:     "test #2",
-			success:  true,
-			operand1: "0",
-			operand2: "7",
-			wantRes:  "-7",
-		},
-		{
-			name:     "test #3",
-			success:  false,
-			operand1: "-2",
-			operand2: "",
-			wantRes:  "",
-		},
-		{
-			name:     "test #4",
-			success:  true,
-			operand1: "-0",
-			operand2: "-3",
-			wantRes:  "3",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			reqBody := smpl_calc_api.Data{
-				Operand1: smpl_calc_api.Operand{
-					Value: tt.operand1,
-					Base:  10,
-				},
-				Operand2: smpl_calc_api.Operand{
-					Value: tt.operand2,
-					Base:  10,
-				},
-				ToBase: 10,
+			number := new(string)
+			*number = "A"
+			base := new(int)
+			*base = 16
+			toBase := new(int)
+			*toBase = 10
+
+			company := models.Request{
+				Number: number,
+				Base:   base,
+				ToBase: toBase,
 			}
-			r, _ := json.Marshal(reqBody)
-			resp, body := testRequest(t, http.MethodPost, "/api/sub", r)
-			defer resp.Body.Close()
 
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, tt.success, body.Success)
-			assert.Equal(t, tt.wantRes, body.Result)
+			jsonValue, _ := json.Marshal(company)
+			req, _ := http.NewRequest("POST", "/translate", bytes.NewBuffer(jsonValue))
+
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusBadRequest, w.Code)
 		})
-	}
-}
 
-func TestHandlerMul(t *testing.T) {
-	tests := []struct {
-		name     string
-		success  bool
-		operand1 string
-		operand2 string
-		wantRes  string
-	}{
-		{
-			name:     "test #1",
-			success:  true,
-			operand1: "5",
-			operand2: "7",
-			wantRes:  "35",
-		},
-		{
-			name:     "test #2",
-			success:  true,
-			operand1: "-9",
-			operand2: "0",
-			wantRes:  "0",
-		},
-		{
-			name:     "test #3",
-			success:  false,
-			operand1: "-1",
-			operand2: "",
-			wantRes:  "",
-		},
-		{
-			name:     "test #4",
-			success:  true,
-			operand1: "-0",
-			operand2: "3",
-			wantRes:  "0",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			reqBody := smpl_calc_api.Data{
-				Operand1: smpl_calc_api.Operand{
-					Value: tt.operand1,
-					Base:  10,
+		t.Run("base", func(t *testing.T) {
+			converter := &ConverterMock{
+				ConvertFunc: func(num string, base int, toBase int) (string, error) {
+
+					return "", nil
 				},
-				Operand2: smpl_calc_api.Operand{
-					Value: tt.operand2,
-					Base:  10,
-				},
-				ToBase: 10,
 			}
-			r, _ := json.Marshal(reqBody)
-			resp, body := testRequest(t, http.MethodPost, "/api/mul", r)
-			defer resp.Body.Close()
 
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, tt.success, body.Success)
-			assert.Equal(t, tt.wantRes, body.Result)
-		})
-	}
-}
+			r := NewRouter(converter)
+			r.POST("/translate", TranslateHandler(converter))
 
-func TestHandlerDiv(t *testing.T) {
-	tests := []struct {
-		name     string
-		success  bool
-		operand1 string
-		operand2 string
-		wantRes  string
-	}{
-		{
-			name:     "test #1",
-			success:  true,
-			operand1: "44",
-			operand2: "2",
-			wantRes:  "22",
-		},
-		{
-			name:     "test #2",
-			success:  true,
-			operand1: "3",
-			operand2: "8",
-			wantRes:  "0",
-		},
-		{
-			name:     "test #3",
-			success:  false,
-			operand1: "-2",
-			operand2: "0",
-			wantRes:  "",
-		},
-		{
-			name:     "test #4",
-			success:  false,
-			operand1: "-0",
-			operand2: "",
-			wantRes:  "",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			reqBody := smpl_calc_api.Data{
-				Operand1: smpl_calc_api.Operand{
-					Value: tt.operand1,
-					Base:  10,
-				},
-				Operand2: smpl_calc_api.Operand{
-					Value: tt.operand2,
-					Base:  10,
-				},
-				ToBase: 10,
+			number := new(string)
+			*number = "1245"
+			base := new(int)
+			*base = 16
+
+			company := models.Request{
+				Number: number,
+				Base:   base,
 			}
-			r, _ := json.Marshal(reqBody)
-			resp, body := testRequest(t, http.MethodPost, "/api/div", r)
-			defer resp.Body.Close()
 
-			assert.Equal(t, http.StatusOK, resp.StatusCode)
-			assert.Equal(t, tt.success, body.Success)
-			assert.Equal(t, tt.wantRes, body.Result)
+			jsonValue, _ := json.Marshal(company)
+			req, _ := http.NewRequest("POST", "/translate", bytes.NewBuffer(jsonValue))
+
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusBadRequest, w.Code)
 		})
-	}
+
+		t.Run("number", func(t *testing.T) {
+			converter := &ConverterMock{
+				ConvertFunc: func(num string, base int, toBase int) (string, error) {
+
+					return "", nil
+				},
+			}
+
+			r := NewRouter(converter)
+			r.POST("/translate", TranslateHandler(converter))
+
+			number := new(string)
+			*number = "-1245"
+			base := new(int)
+			*base = 16
+
+			company := models.Request{
+				Number: number,
+				Base:   base,
+			}
+
+			jsonValue, _ := json.Marshal(company)
+			req, _ := http.NewRequest("POST", "/translate", bytes.NewBuffer(jsonValue))
+
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+
+			assert.Equal(t, http.StatusBadRequest, w.Code)
+		})
+	})
 }
